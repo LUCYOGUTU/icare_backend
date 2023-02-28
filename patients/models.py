@@ -3,18 +3,17 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from doctors.models import Doctor
+# from doctors.models import Doctor
 from .managers import CustomUserManager
 
 
-class CustomUser(AbstractUser):
-
-    GENDER_CHOICES = (
+GENDER_CHOICES = (
         ('M', 'Male'),
         ('F', 'Female'),
         ('O', 'Other'),
     )
 
+class CustomUser(AbstractUser):
     username = None
     email = models.EmailField(_("email address"), unique=True)
     phone_number = models.IntegerField(null=True)
@@ -33,8 +32,8 @@ class CustomUser(AbstractUser):
 
 
 class Review(models.Model):
-    user = models.ForeignKey(CustomUser, related_name='reviews', on_delete=models.CASCADE)
-    hcw = models.ForeignKey(Doctor, related_name='reviews', on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    hcw = models.ForeignKey("doctors.Doctor", related_name='reviews', on_delete=models.CASCADE)
     rating = models.IntegerField()
     review = models.CharField(max_length=300)
     date = models.DateTimeField(auto_now_add=True)

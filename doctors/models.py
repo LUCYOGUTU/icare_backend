@@ -1,7 +1,12 @@
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import models
-class Doctor(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+from patients.models import CustomUser
+
+# CustomUser = get_user_model()
+class Doctor(CustomUser):
+    # user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     SPECIALIZATION = (
         ('Physician', 'Physician'),
         ('Dentist', 'Dentist'),
@@ -19,7 +24,8 @@ class Doctor(models.Model):
     address = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.user.first_name + " " + self.user.last_name
+        if self.doctor is not None:
+            return self.first_name + " " + self.last_name
 
 
 class Availability(models.Model):

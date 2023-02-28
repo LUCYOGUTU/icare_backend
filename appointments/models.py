@@ -10,8 +10,8 @@ class Appointment(models.Model):
         ('COMPLETE', 'Complete'),
     )
 
-    patient = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    clinic = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+    patient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='appointments')
+    clinic = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='clinic_appointments')
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     appointment_status = models.CharField(max_length=10, choices=STATUS)
