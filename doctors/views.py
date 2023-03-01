@@ -1,4 +1,5 @@
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -15,7 +16,7 @@ class UserList(APIView):
     List all Users and Register new user
     """
 
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
 
     def get(self, request, format=None):
         users = Doctor.objects.all()
@@ -36,7 +37,7 @@ class RegisterDoctor(APIView):
             return Response(data=response, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  
 
-class UserLogin(APIView):
+class LoginDoctor(APIView):
     """
     Login Users
     """
@@ -71,3 +72,51 @@ class UserLogin(APIView):
                 "message": "Invalid email or password",
             }
             return Response(data=response)
+
+
+# not yet tested
+class LogoutDoctor(APIView):
+    """
+    Logout Patients
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        try:
+            refresh_token = request.data["refresh_token"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except TokenError as e:
+            return Response(data=e, status=status.HTTP_400_BAD_REQUEST)
+        
+
+# forgot password/ reset view should go here
+
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, format=None):
+        user = request.user
+        serializer = Doctor(user, many=False)
+        return Response(serializer.data)
+    
+# not working (work in progress)
+class EditProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, format=None):
+        user = request.user.doctor
+        serializer = Doctor(user, many=False)
+        if serializer.is_valid():
+            serializer.save(request)
+
+            response = {
+                "message": "Doctor details updated successfully",
+                "data": serializer.data
+            }
+
+            return Response(data=response, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
