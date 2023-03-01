@@ -1,27 +1,31 @@
+from django.utils.translation import gettext_lazy as _
+
 from rest_framework import serializers
+from rest_framework.authtoken.models import Token
 
 from .models import Doctor, Availability
-from patients.models import GENDER_CHOICES
 
 class DoctorSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(max_length=255)
-    last_name = serializers.CharField(max_length=255)
-    phone_number = serializers.IntegerField()
-    date_of_birth = serializers.DateField()
-    gender = serializers.ChoiceField(choices=GENDER_CHOICES)
-
     class Meta:
         model = Doctor
-        fields = ('first_name', 'last_name', 'email', 'password', 'phone_number', 'date_of_birth', 'gender', 'bio', 'specialization', 'years_of_experience', 'clinic', 'time_slot', 'address')
+        # fields = ('id','first_name', 'last_name', 'email', 'password', 'phone_number', 'date_of_birth', 'gender', 'bio', 'specialization', 'years_of_experience', 'clinic', 'time_slot', 'address')
+        fields = ('__all__')
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = super().create(validated_data)
+        user.set_password(password)
+        user.save()
+        Token.objects.create(user=user)
+        return user
 
 
-
-# data given
+# data given when registering a new user
 # {
 #     "first_name": "George",
 #     "last_name": "Hewer",
 #     "email": "george@gmail.com",
-#     "password": "lucy@2000!",
+#     "password": "xv@2000!",
 #     "phone_number": 796101125,
 #     "date_of_birth": "2023-01-14",
 #     "gender": "F",
@@ -39,7 +43,7 @@ class DoctorSerializer(serializers.ModelSerializer):
 #     "first_name": "George",
 #     "last_name": "Hewer",
 #     "email": "george@gmail.com",
-#     "password": "lucy@2000!",
+#     "password": "xv@2000!",
 #     "phone_number": 796101125,
 #     "date_of_birth": "2023-01-14",
 #     "gender": "F",

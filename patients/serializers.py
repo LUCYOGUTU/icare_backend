@@ -1,24 +1,21 @@
-from allauth.account.adapter import get_adapter
-from rest_auth.registration.serializers import RegisterSerializer
 from allauth.account import app_settings as allauth_settings
-from rest_framework import serializers
-from django.utils.translation import gettext_lazy as _
 from allauth.utils import email_address_exists
+from allauth.account.adapter import get_adapter
+
+from django.utils.translation import gettext_lazy as _
+
+from rest_framework import serializers
+from rest_framework.authtoken.models import Token
 
 from .models import CustomUser, Review, GENDER_CHOICES
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(required=allauth_settings.EMAIL_REQUIRED)
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
-    phone_number = serializers.IntegerField()
-    date_of_birth = serializers.DateField()
-    gender = serializers.ChoiceField(choices=GENDER_CHOICES)
-
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'email', 'password1', 'password2', 'phone_number', 'date_of_birth', 'gender')
+        fields = ('id', 'first_name', 'last_name', 'email', 'password1', 'password2', 'phone_number', 'date_of_birth', 'gender')
 
     def validate_email(self, email):
         email = get_adapter().clean_email(email)
@@ -48,7 +45,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'date_of_birth': self.validated_data.get('date_of_birth'),
         }
 
-    # override save method of RegisterSerializer
+    # override save method
     def save(self, request):
         adapter = get_adapter()
         user = adapter.new_user(request)
@@ -61,8 +58,34 @@ class CustomUserSerializer(serializers.ModelSerializer):
         user.gender = self.cleaned_data.get('gender')
         user.date_of_birth = self.cleaned_data.get('date_of_birth')
         user.save()
+        Token.objects.create(user=user)
         adapter.save_user(request, user, self)
+        
         return user
+
+
+# data given
+# {
+#     "first_name": "Janet",
+#     "last_name": "Weber",
+#     "email": "janet@gmail.com",
+#     "password1": "xv@2000!",
+#     "password2": "xv@2000!",
+#     "phone_number": 796101125,
+#     "date_of_birth": "2023-01-14",
+#     "gender": "F"
+# }
+
+# response
+# {
+#     "id": 4,
+#     "first_name": "Janet",
+#     "last_name": "Weber",
+#     "email": "janet@gmail.com",
+#     "phone_number": 796101125,
+#     "date_of_birth": "2023-01-14",
+#     "gender": "F"
+# }
 
 
 class ReviewSerializer(serializers.ModelSerializer):
