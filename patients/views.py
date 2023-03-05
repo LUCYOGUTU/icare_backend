@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.contrib.auth import authenticate
 
 from rest_framework import status
@@ -6,10 +7,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
+from appointments.serializers import AppointmentSerializer
 from doctors.models import Doctor
 from doctors.serializers import DoctorSerializer
-from .models import CustomUser
-from .serializers import CustomUserSerializer
+from .models import CustomUser, Review
+from .serializers import CustomUserSerializer, ReviewSerializer
 from .tokens import create_jwt_token_pair
 
 class UserList(APIView):
@@ -119,23 +121,70 @@ class ProfileView(APIView):
         serializer = CustomUserSerializer(user, many=False)
         return Response(serializer.data)
     
-# not working (work in progress)
+
 class EditProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, format=None):
-        user = request.user.customuser
-        serializer = CustomUserSerializer(user, many=False)
-        if serializer.is_valid():
-            serializer.save(request)
+        user = request.user
+        
+        data = request.data
+        user.first_name = data.get('first_name')
+        user.last_name = data.get('last_name')
+        user.email = data.get('email')
+        user.password = data.get('password')
+        user.phone_number = data.get('phone_number')
+        user.date_of_birth = data.get('date_of_birth')
+        user.gender = data.get('gender')
 
+        if user.password:
+            user.set_password(user.password)        
+
+        user.save()
+
+        serializer = CustomUserSerializer(user, many=False)
+        try:
             response = {
-                "message": "Patient details updated successfully",
-                "data": serializer.data
+                    "message": "Patient details updated successfully",
+                    "data": serializer.data
             }
 
             return Response(data=response, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+
+#    user = User.objects.get(username='myusername')
+# user.set_password('newpassword')
+# user.save()     
+# class UpdateUser(RetrieveUpdateAPIView):
+#     permission_classes = (IsAuthenticated,)
+#     serializer_class = UserSerializerAPI
+#     queryset = User.objects.all()
+
+#     def perform_update(self, serializer):
+#         instance = serializer.save()
+#         instance.set_password(instance.password)
+#         instance.save()
 
 
+class ViewAppointments(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        user = request.user.id
+        patient = CustomUser.objects.get(id=user)
+        appointments = patient.appointments.filter(appointment_status='BOOKED')
+        serializer = AppointmentSerializer(appointments, many=True)
+        return Response(serializer.data)
+    
+class ViewCanceledAppointments(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        user = request.user.id
+        patient = CustomUser.objects.get(id=user)
+        appointments = patient.appointments.filter(appointment_status='CANCELED')
+        serializer = AppointmentSerializer(appointments, many=True)
+        return Response(serializer.data)
+    
     

@@ -28,9 +28,10 @@ urlpatterns = [
     path('rest-auth/registration/', include('rest_auth.registration.urls')),
     path('patients/', include('patients.urls')),
     path('doctors/', include('doctors.urls')),
-    # path('appointments/', include('appointments.urls')),
+    path('appointments/', include('appointments.urls')),
     path('token/obtain_pair', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
 
 ]
+ 

@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
+from appointments.serializers import AppointmentSerializer
 from .tokens import create_jwt_token_pair
 
 from .models import Doctor
@@ -99,24 +100,53 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, format=None):
-        user = request.user
-        serializer = Doctor(user, many=False)
+        # you ill notice I have not used user=request.user since user is the CustomUser we got so we have to add doctor to specifically inform tthat the user is a doctor
+        user = request.user.doctor
+        serializer = DoctorSerializer(user, many=False)
         return Response(serializer.data)
     
-# not working (work in progress)
+# not tested
 class EditProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, format=None):
         user = request.user.doctor
-        serializer = Doctor(user, many=False)
-        if serializer.is_valid():
-            serializer.save(request)
+        data = request.data
+        user.first_name = data.get('first_name')
+        user.last_name = data.get('last_name')
+        user.email = data.get('email')
+        user.password = data.get('password')
+        user.phone_number = data.get('phone_number')
+        user.date_of_birth = data.get('date_of_birth')
+        user.gender = data.get('gender')
+        user.bio = data.get('bio')
+        user.specialization = data.get('specialization')
+        user.years_of_experience = data.get('years_of_experience')
+        user.clinic = data.get('clinic')
+        user.time_slot = data.get('time_slot')
+        user.address = data.get('address')
+        if user.password:
+            user.set_password(user.password) 
 
+        user.save()
+
+        serializer = DoctorSerializer(user, many=False)
+        try:
             response = {
-                "message": "Doctor details updated successfully",
-                "data": serializer.data
+                    "message": "Doctor details updated successfully",
+                    "data": serializer.data
             }
 
-            return Response(data=response, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data=response, status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+
+class ViewAppointments(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        user = request.user.id
+        doctor = Doctor.objects.get(id=user)
+        appointments = doctor.clinic_appointments.filter(appointment_status='BOOKED')
+        serializer = AppointmentSerializer(appointments, many=True)
+        return Response(serializer.data)
