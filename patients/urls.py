@@ -14,4 +14,5 @@ urlpatterns = [
     path('edit-profile-view/', views.EditProfileView.as_view(), name='edit-profile-view'),
     path('view-appointments/', views.ViewAppointments.as_view(), name='view-appointments'),
     path('view-canceled-appointments/', views.ViewCanceledAppointments.as_view(), name='view-canceled-appointments'),
+    path('view-past-appointments/', views.ViewPastAppointments.as_view(), name='view-past-appointments'),
 ]

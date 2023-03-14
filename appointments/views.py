@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -19,6 +20,15 @@ class BookAppointment(APIView):
         data = request.data.copy()
         data['patient'] = request.user.id
         data['appointment_status'] = 'BOOKED'
+
+        appointment_exists = Appointment.objects.filter(
+            date=data['date'],
+            start_time=data['start_time'],
+            doctor=data['doctor']
+        ).exists()
+        if appointment_exists:
+            raise ValidationError("Appointment already booked")
+        
         serializer = AppointmentSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -28,6 +38,8 @@ class BookAppointment(APIView):
             }
             return Response(response, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        
         
 # add the url in urls.py and test
 class RescheduleAppointment(APIView):
@@ -46,7 +58,7 @@ class RescheduleAppointment(APIView):
             appointment.end_time = request.data['end_time']
             appointment.save()
 
-            serializer = AppointmentSerializer(appointment)
+            serializer = AppointmentSerializer(appointment) 
             response = {
                     "message": "Appointment updated successfully",
                     "data": serializer.data

@@ -1,5 +1,6 @@
 from datetime import datetime
 from django.contrib.auth import authenticate
+from django.db.models import Q
 
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
@@ -7,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
+from appointments.models import Appointment
 from appointments.serializers import AppointmentSerializer
 from doctors.models import Doctor
 from doctors.serializers import DoctorSerializer
@@ -67,14 +69,12 @@ class LoginPatient(APIView):
                 "tokens": tokens
             }
             return Response(data=response, status=status.HTTP_200_OK)
-        else:
-            response = {
-                "message": "Invalid email or password",
-            }
-            return Response(data=response)
+        response = {
+            "message": "Invalid email or password",
+        }
+        return Response(data=response, status=status.HTTP_400_BAD_REQUEST)
         
 
-# not yet tested
 class LogoutPatient(APIView):
     """
     Logout Patients
@@ -83,7 +83,7 @@ class LogoutPatient(APIView):
     
     def post(self, request):
         try:
-            refresh_token = request.data["refresh_token"]
+            refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
 
@@ -101,7 +101,7 @@ class DoctorList(APIView):
     def get(self, request, format=None):
         users = Doctor.objects.all()
         serializer = DoctorSerializer(users, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 
 class DoctorDetail(APIView):
@@ -153,28 +153,16 @@ class EditProfileView(APIView):
         except Exception as e:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
 
-#    user = User.objects.get(username='myusername')
-# user.set_password('newpassword')
-# user.save()     
-# class UpdateUser(RetrieveUpdateAPIView):
-#     permission_classes = (IsAuthenticated,)
-#     serializer_class = UserSerializerAPI
-#     queryset = User.objects.all()
-
-#     def perform_update(self, serializer):
-#         instance = serializer.save()
-#         instance.set_password(instance.password)
-#         instance.save()
-
 
 class ViewAppointments(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
+        
         user = request.user.id
-        patient = CustomUser.objects.get(id=user)
-        appointments = patient.appointments.filter(appointment_status='BOOKED')
-        serializer = AppointmentSerializer(appointments, many=True)
+        patient = CustomUser.objects.get(id=user)        
+        booked_appointments = patient.appointments.filter(Q(date__gt=datetime.now()), (Q(start_time__gt=datetime.now().time()) | Q(start_time__lt=datetime.now().time())), Q(appointment_status='BOOKED')).order_by('date', 'start_time')
+        serializer = AppointmentSerializer(booked_appointments, many=True)
         return Response(serializer.data)
     
 class ViewCanceledAppointments(APIView):
@@ -183,8 +171,20 @@ class ViewCanceledAppointments(APIView):
     def get(self, request, format=None):
         user = request.user.id
         patient = CustomUser.objects.get(id=user)
-        appointments = patient.appointments.filter(appointment_status='CANCELED')
+        appointments = patient.appointments.filter(Q(date__gt=datetime.now()), (Q(start_time__gt=datetime.now().time()) | Q(start_time__lt=datetime.now().time())), Q(appointment_status='CANCELED'))
         serializer = AppointmentSerializer(appointments, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class ViewPastAppointments(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+
+        user = request.user.id
+        patient = CustomUser.objects.get(id=user)
+        # appointments = patient.appointments.filter(Q(date__lt=datetime.now().date()), Q(start_time__lt=datetime.now().time().strftime('%H:%M:%S')))
+        appointments = patient.appointments.filter(Q(date__lt=datetime.now().date()), (Q(start_time__lt=datetime.now().time()) | Q(start_time__gt=datetime.now().time())))
+        serializer = AppointmentSerializer(appointments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     

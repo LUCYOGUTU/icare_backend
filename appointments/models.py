@@ -20,6 +20,7 @@ class Appointment(models.Model):
 
     class Meta:
         verbose_name_plural = 'Appointments'
+        ordering = ['-date', '-start_time']
 
     def __str__(self):
         return f"{self.user}'s appointment with Dr. {self.doctor.name} on {self.date} at {self.start_time}"

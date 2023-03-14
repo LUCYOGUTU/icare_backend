@@ -6,9 +6,9 @@ from .managers import CustomUserManager
 
 
 GENDER_CHOICES = (
-        ('M', 'Male'),
-        ('F', 'Female'),
-        ('O', 'Other'),
+        ('Male', 'Male'),
+        ('Female', 'Female'),
+        ('Other', 'Other'),
     )
 
 class CustomUser(AbstractUser):
@@ -16,7 +16,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
     phone_number = models.IntegerField(null=True)
     date_of_birth = models.DateField(null=True)
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True)
 
 
     USERNAME_FIELD = "email"
